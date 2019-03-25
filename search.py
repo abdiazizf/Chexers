@@ -3,6 +3,9 @@ COMP30024 Artificial Intelligence, Semester 1 2019
 Solution to Project Part A: Searching
 
 Authors: Abdiaziz Farah, Jordan Puckridge
+
+
+HEX BASED IMPLEMENTATION
 """
 
 import sys
@@ -20,6 +23,9 @@ def main():
     
 class board: 
     
+    # With hex based the board_state dict will contain a dictionary of hexes
+    # coordinates will still be key, hex is now value
+    
     # Dictionary: tuples (board coordinates) as key, current piece status as value
     board_state = {}
     
@@ -31,7 +37,7 @@ class board:
        
     # Return a boolean if a board position is unoccupied
     def position_occupied(self,position):
-        if(self.board_state[position] == 'empty'):
+        if(self.board_state[position].occupied == True):
             return True
         else: 
             return False     
@@ -41,10 +47,12 @@ class board:
 
         tuples = [(x, y) for x in range(-3,4) for y in range(-3,4)]
         
+        
         for entry in tuples:
-            self.board_state[entry] = '-'
+            self.board_state[entry] = hex(entry)
         for entry in initial_board:
-            self.board_state[entry] = initial_board[entry]
+            self.board_state[entry].occupied = True
+            self.board_state[entry].current_piece = initial_board[entry]
         
     def __init__(self, initial_board):
         self.generate_board(initial_board)
@@ -55,10 +63,18 @@ class hex:
     # Each hex has a co-ordinate 
     
     coordinates = null
+    
+    occupied = null
+    
+    current_piece = null
+    
     axial_directions = [(1,0),(1,-1),(0,-1),(-1,0),(-1,1),(0,1)]
     
     def hex_direction(self,direction):
         return self.axial_directions[direction]
+    
+    def __init__(self,coordinate):
+        self.coordinates = coordinate
     
     
 class piece:
