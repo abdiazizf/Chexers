@@ -49,14 +49,24 @@ class board:
     def __init__(self, initial_board):
         self.generate_board(initial_board)
     
-
+class hex: 
+    
+    # Could possibly define a game board as a collection of hexes. 
+    # Each hex has a co-ordinate 
+    
+    coordinates = null
+    axial_directions = [(1,0),(1,-1),(0,-1),(-1,0),(-1,1),(0,1)]
+    
+    def hex_direction(self,direction):
+        return self.axial_directions[direction]
+    
     
 class piece:
-    
     
     colour = 'default'
     cur_position = ()
     
+
     def update_position(self, new_position):
         self.cur_positon = new_position
     
