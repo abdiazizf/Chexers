@@ -12,6 +12,8 @@ import sys
 import json
 
 def main():
+    
+    
     with open(sys.argv[1]) as file:
         data = json.load(file)
 
@@ -19,6 +21,7 @@ def main():
     # TODO: Search for and output winning sequence of moves
     # ...
     game_board = board(board_dict)
+    
     print_board(game_board.board_state)
     
 class board: 
@@ -62,11 +65,11 @@ class hex:
     # Could possibly define a game board as a collection of hexes. 
     # Each hex has a co-ordinate 
     
-    coordinates = null
+    coordinates = None
     
-    occupied = null
+    occupied = None
     
-    current_piece = null
+    current_piece = None
     
     axial_directions = [(1,0),(1,-1),(0,-1),(-1,0),(-1,1),(0,1)]
     
@@ -184,7 +187,7 @@ def print_board(board_dict, message="", debug=False, **kwargs):
     cells = []
     for qr in [(q,r) for q in ran for r in ran if -q-r in ran]:
         if qr in board_dict:
-            cell = str(board_dict[qr]).center(5)
+            cell = str(board_dict[qr].current_piece).center(5)
         else:
             cell = "     " # 5 spaces will fill a cell
         cells.append(cell)
