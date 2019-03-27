@@ -11,6 +11,16 @@ HEX BASED IMPLEMENTATION
 import sys
 import json
 
+# TODO: Implement a move function for board to check for a valid move and then swap pieces
+# Also needs to print the specified output according to the project spec
+
+# TODO: Implement a distance function to calculate how far it is from a hex to 
+# the nearest goal space, to use in a heuristic evaluation 
+
+# TODO: Implement search algorithm that finds optimal solution and records 
+# the sequence of moves 
+
+
 def main():
     
     
@@ -24,15 +34,7 @@ def main():
     
     print_board(game_board.board_state)
     
-    direction = (1,0)
-    old_position = game_board.board_state[0,0]
-    
-    new_position = game_board.get_neighbour_in_direction(direction, old_position)
-    
-    game_board.swap_spaces_by_hex(new_position, old_position)
-        
-    print_board(game_board.board_state)
-    
+
     
 class board: 
     
@@ -49,18 +51,15 @@ class board:
             return True
         else: 
             return False     
-    
-    def hex_direction(self,direction):
-        return self.axial_directions[direction]
         
-    # Returns the neighbouring hex on the game board in specified direction
+    # Returns the neighboring hex on the game board in specified direction
     def get_neighbour_in_direction(self,direction,game_hex):
-        #neighbour_dir  = self.hex_direction(direction)
         
         new_position = tuple(sum(i) for i in zip(game_hex.coordinates, direction))
         
         return self.board_state[new_position]  
         
+    # Returns true if a hex position is on the game board
     def valid_position(self,game_hex):
     
         position = game_hex.coordinates
@@ -70,6 +69,7 @@ class board:
             return False
         else: return self.position_occupied(position)
         
+    # Swap two hexes in the board_state dictionary
     def swap_spaces_by_hex(self,hex1,hex2):
         tmp = self.board_state[hex1.coordinates]
         self.board_state[hex1.coordinates] = self.board_state[hex2.coordinates] 
@@ -88,6 +88,7 @@ class board:
             self.board_state[entry].occupied = True
             self.board_state[entry].current_piece = initial_board[entry]
         
+    # Constructor function
     def __init__(self, initial_board):
         self.generate_board(initial_board)
     
@@ -97,9 +98,7 @@ class game_hex:
     # Each hex has a co-ordinate 
     
     coordinates = None
-    
     occupied = None
-    
     current_piece = None
      
     
