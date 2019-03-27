@@ -24,6 +24,16 @@ def main():
     
     print_board(game_board.board_state)
     
+    direction = (1,0)
+    old_position = game_board.board_state[0,0]
+    
+    new_position = game_board.get_neighbour_in_direction(direction, old_position)
+    
+    game_board.swap_spaces_by_hex(new_position, old_position)
+        
+    print_board(game_board.board_state)
+    
+    
 class board: 
     
     # With hex based the board_state dict will contain a dictionary of hexes
@@ -31,19 +41,39 @@ class board:
     
     # Dictionary: tuples (board coordinates) as key, current piece status as value
     board_state = {}
+    axial_directions = [(1,0),(1,-1),(0,-1),(-1,0),(-1,1),(0,1)]
     
-    # Updates the board_dict for printing
-    def update_board_dict(self,new_position,old_position,board_dict):
-        temp = board_dict[new_position] 
-        board_dict[new_position] = board_dict[old_position]
-        board_dict[old_position] = temp
-       
     # Return a boolean if a board position is unoccupied
     def position_occupied(self,position):
         if(self.board_state[position].occupied == True):
             return True
         else: 
             return False     
+    
+    def hex_direction(self,direction):
+        return self.axial_directions[direction]
+        
+    # Returns the neighbouring hex on the game board in specified direction
+    def get_neighbour_in_direction(self,direction,game_hex):
+        #neighbour_dir  = self.hex_direction(direction)
+        
+        new_position = tuple(sum(i) for i in zip(game_hex.coordinates, direction))
+        
+        return self.board_state[new_position]  
+        
+    def valid_position(self,game_hex):
+    
+        position = game_hex.coordinates
+        if not (position[0] in range(-3,4)):
+            return False
+        elif not(position[1] in range(-3,4)):
+            return False
+        else: return self.position_occupied(position)
+        
+    def swap_spaces_by_hex(self,hex1,hex2):
+        tmp = self.board_state[hex1.coordinates]
+        self.board_state[hex1.coordinates] = self.board_state[hex2.coordinates] 
+        self.board_state[hex2.coordinates] = tmp
     
     # Generate tuples and assign initial values from board_dict
     def generate_board(self, initial_board):
@@ -52,7 +82,8 @@ class board:
         
         
         for entry in tuples:
-            self.board_state[entry] = hex(entry)
+            self.board_state[entry] = game_hex(entry)
+            self.board_state[entry].current_piece = '-'
         for entry in initial_board:
             self.board_state[entry].occupied = True
             self.board_state[entry].current_piece = initial_board[entry]
@@ -60,7 +91,7 @@ class board:
     def __init__(self, initial_board):
         self.generate_board(initial_board)
     
-class hex: 
+class game_hex: 
     
     # Could possibly define a game board as a collection of hexes. 
     # Each hex has a co-ordinate 
@@ -70,11 +101,7 @@ class hex:
     occupied = None
     
     current_piece = None
-    
-    axial_directions = [(1,0),(1,-1),(0,-1),(-1,0),(-1,1),(0,1)]
-    
-    def hex_direction(self,direction):
-        return self.axial_directions[direction]
+     
     
     def __init__(self,coordinate):
         self.coordinates = coordinate
@@ -92,6 +119,7 @@ class piece:
     def __init__(self,colour):
         self.colour = colour
         
+
 
 def convert_json_to_board_dict(file):
     
