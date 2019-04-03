@@ -40,7 +40,6 @@ class Board:
     # coordinates will still be key, hex is now value
     # Dictionary: tuples (board coordinates) as key, current piece status as value
     board_state = {}
-    valid__ = {}
     pieces = []
     goal = {'R': [(3, -3), (3,-2) , (3,-1) , (3, 0)] , 'B':[(0, -3), (-1,-2) , (-2,-1) , (-3, 0)] , 'G' :[(-3, 3), (-2, 3) , (-1, 3) , (0, 3)]}
     target = []
