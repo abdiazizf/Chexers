@@ -3,85 +3,144 @@ COMP30024 Artificial Intelligence, Semester 1 2019
 Solution to Project Part A: Searching
 
 Authors: Abdiaziz Farah, Jordan Puckridge
+
+
+HEX BASED IMPLEMENTATION
 """
 
 import sys
 import json
 
+# TODO: Implement a move function for board to check for a valid move and then swap pieces
+# Also needs to print the specified output according to the project spec
+
+# TODO: Implement a distance function to calculate how far it is from a hex to
+# the nearest goal space, to use in a heuristic evaluation
+
+# TODO: Implement search algorithm that finds optimal solution and records
+# the sequence of moves
+
+
 def main():
+
+
     with open(sys.argv[1]) as file:
         data = json.load(file)
 
     board_dict = convert_json_to_board_dict(data)
     # TODO: Search for and output winning sequence of moves
     # ...
-    game_board = board(board_dict)
-    print_board(game_board.board_state)
-    
-class board: 
-    
+    initial_state = Board(board_dict)
+    Board.successor_board_states(initial_state)
+class Board:
+    # With hex based the board_state dict will contain a dictionary of hexes
+    # coordinates will still be key, hex is now value
     # Dictionary: tuples (board coordinates) as key, current piece status as value
     board_state = {}
-    
-    # Updates the board_dict for printing
-    def update_board_dict(self,new_position,old_position,board_dict):
-        temp = board_dict[new_position] 
-        board_dict[new_position] = board_dict[old_position]
-        board_dict[old_position] = temp
-       
-    # Return a boolean if a board position is unoccupied
-    def position_occupied(self,position):
-        if(self.board_state[position] == 'empty'):
-            return True
-        else: 
-            return False     
-    
-    # Generate tuples and assign initial values from board_dict
-    def generate_board(self, initial_board):
+    valid__ = {}
+    pieces = []
+    axial_directions = [(1, 0),(1, -1),(0, -1),(-1, 0),(-1, 1),(0, 1)]
+    axial_jump = [(2, 0),(2, -2),(0, -2),(-2, 0),(-2, 2),(0, 2)]
 
-        tuples = [(x, y) for x in range(-3,4) for y in range(-3,4)]
-        
-        for entry in tuples:
-            self.board_state[entry] = '-'
-        for entry in initial_board:
-            self.board_state[entry] = initial_board[entry]
-        
+    # Constructor function
+    def empty_hex(self,position):
+        return self.board_state[position].is_occupied
+
+
     def __init__(self, initial_board):
-        self.generate_board(initial_board)
-    
+        tuples = [(x, y) for x in range(-3,4) for y in range(-3,4)]
+        for entry in tuples:
+            self.board_state[entry] = GameHex(entry, False, False)
+        for entry in initial_board:
+            if initial_board[entry] != 'BLK':
+                self.pieces.append(entry)
+            self.board_state[entry].is_occupied = True
+            self.board_state[entry].occupied_by = initial_board[entry]
 
-    
-class piece:
-    
-    
-    colour = 'default'
-    cur_position = ()
-    
-    def update_position(self, new_position):
-        self.cur_positon = new_position
-    
-    def __init__(self,colour):
-        self.colour = colour
-        
+
+
+    def successor_board_states(self):
+        potential_moves = []
+        potential_jump = []
+
+        legal_moves = []
+        legal_jumps =[]
+
+        for i in Board.axial_directions :
+            potential_moves.append((self.pieces[0][0]+i[0], self.pieces[0][1]+i[1]))
+        for i in Board.axial_jump :
+            potential_jump.append((self.pieces[0][0] + i[0], self.pieces[0][1] + i[1]))
+
+        for i in potential_moves :
+            if i[0] not  in range(-3,4) or  i[1] not in range(-3,4):
+               break
+            if self.board_state[i].is_occupied :
+                print(self.board_state[i].is_occupied )
+
+
+
+        return
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class GameHex:
+
+    # Could possibly define a game board as a collection of hexes.
+    # Each hex has a co-ordinate
+
+
+    def __init__(self,coordinate,is_occupied,occupied_by):
+        self.coordinates = coordinate
+        self.is_occupied = is_occupied
+        self.occupied_by = occupied_by
+
+
+    def __str__(self):
+        return "S({}, {}, {})".format(self.coordinates, self.is_occupied, self.occupied_by)
+
+
+
 
 def convert_json_to_board_dict(file):
-    
-    
-    # Reads colour from the JSON, compares it to a dictionary of values and 
-    # sets the correct symbol 
+    # Reads colour from the JSON, compares it to a dictionary of values and
+    # sets the correct symbol
     colour_dict = {'red' : 'R','blue': 'B','green':'G'}
     player_colour = colour_dict[file['colour']]
-    
     # Creates an empty dict and constructs an entry for each tuple in JSON, using
     # predetermined player colour for player pieces and a block otherwise
     board_dict = {}
-    
     for coordinate in file['pieces']:
         board_dict[tuple(coordinate)] = player_colour
     for coordinate in file['blocks']:
         board_dict[tuple(coordinate)] = 'BLK'
-    
-    #return dict 
+    # return dict
     return board_dict
 
 
@@ -89,21 +148,20 @@ def convert_json_to_board_dict(file):
 def print_board(board_dict, message="", debug=False, **kwargs):
     """
     Helper function to print a drawing of a hexagonal board's contents.
-    
-    Arguments:
 
+    Arguments:
     * `board_dict` -- dictionary with tuples for keys and anything printable
-    for values. The tuple keys are interpreted as hexagonal coordinates (using 
-    the axial coordinate system outlined in the project specification) and the 
-    values are formatted as strings and placed in the drawing at the corres- 
-    ponding location (only the first 5 characters of each string are used, to 
+    for values. The tuple keys are interpreted as hexagonal coordinates (using
+    the axial coordinate system outlined in the project specification) and the
+    values are formatted as strings and placed in the drawing at the corres-
+    ponding location (only the first 5 characters of each string are used, to
     keep the drawings small). Coordinates with missing values are left blank.
 
     Keyword arguments:
 
-    * `message` -- an optional message to include on the first line of the 
+    * `message` -- an optional message to include on the first line of the
     drawing (above the board) -- default `""` (resulting in a blank message).
-    * `debug` -- for a larger board drawing that includes the coordinates 
+    * `debug` -- for a larger board drawing that includes the coordinates
     inside each hex, set this to `True` -- default `False`.
     * Or, any other keyword arguments! They will be forwarded to `print()`.
     """
@@ -158,7 +216,7 @@ def print_board(board_dict, message="", debug=False, **kwargs):
     cells = []
     for qr in [(q,r) for q in ran for r in ran if -q-r in ran]:
         if qr in board_dict:
-            cell = str(board_dict[qr]).center(5)
+            cell = str(board_dict[qr].current_piece).center(5)
         else:
             cell = "     " # 5 spaces will fill a cell
         cells.append(cell)
