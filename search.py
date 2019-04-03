@@ -121,7 +121,6 @@ def sign(x , y) :
         return 0
 
 def heuristic(board_state):
-
     distance_x = board_state.target[0][0] - board_state.pieces[0][0]
     distance_y = board_state.target[0][1] - board_state.pieces[0][1]
     if sign(distance_x, distance_y):
