@@ -112,7 +112,7 @@ class GameHex:
         return "S({}, {}, {})".format(self.coordinates, self.is_occupied, self.occupied_by)
 
 
-def sign(x , y) :
+def same_sign(x , y) :
     if x < 0 and y < 0 :
         return 1
     elif x>=0 and y>= 0 :
@@ -123,7 +123,7 @@ def sign(x , y) :
 def heuristic(board_state):
     distance_x = board_state.target[0][0] - board_state.pieces[0][0]
     distance_y = board_state.target[0][1] - board_state.pieces[0][1]
-    if sign(distance_x, distance_y):
+    if same_sign(distance_x, distance_y):
         return abs(distance_x + distance_y)
     else:
         return max(abs(distance_x), abs(distance_y))
