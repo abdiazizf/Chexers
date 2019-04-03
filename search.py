@@ -32,6 +32,7 @@ def main():
     # ...
     initial_state = Board(board_dict)
     Board.successor_board_states(initial_state)
+    print_board(board_dict)
 class Board:
     # With hex based the board_state dict will contain a dictionary of hexes
     # coordinates will still be key, hex is now value
@@ -73,40 +74,27 @@ class Board:
 
         for i in potential_moves :
             if i[0] not  in range(-3,4) or  i[1] not in range(-3,4):
-               break
-            if self.board_state[i].is_occupied :
-                print(self.board_state[i].is_occupied )
+               continue
+            elif self.board_state[i].is_occupied :
+                continue
+            legal_moves.append(i)
+        for i in potential_jump:
+            if i[0] not in range(-3, 4) or i[1] not in range(-3, 4):
+                continue
+            elif self.board_state[i].is_occupied :
+                continue
+            elif self.board_state[(i[0] / 2, i[1] / 2)].is_occupied :
+                legal_jumps.append(i)
+            else :
+                continue
 
+
+        print(self.pieces[0])
+
+        print(legal_jumps)
 
 
         return
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -144,6 +132,24 @@ def convert_json_to_board_dict(file):
     return board_dict
 
 
+def convert_json_to_board_dict(file):
+    # Reads colour from the JSON, compares it to a dictionary of values and
+    # sets the correct symbol
+    colour_dict = {'red': 'R', 'blue': 'B', 'green': 'G'}
+    player_colour = colour_dict[file['colour']]
+
+    # Creates an empty dict and constructs an entry for each tuple in JSON, using
+    # predetermined player colour for player pieces and a block otherwise
+    board_dict = {}
+
+    for coordinate in file['pieces']:
+        board_dict[tuple(coordinate)] = player_colour
+    for coordinate in file['blocks']:
+        board_dict[tuple(coordinate)] = 'BLK'
+
+    # return dict
+    return board_dict
+
 
 def print_board(board_dict, message="", debug=False, **kwargs):
     """
@@ -156,9 +162,7 @@ def print_board(board_dict, message="", debug=False, **kwargs):
     values are formatted as strings and placed in the drawing at the corres-
     ponding location (only the first 5 characters of each string are used, to
     keep the drawings small). Coordinates with missing values are left blank.
-
     Keyword arguments:
-
     * `message` -- an optional message to include on the first line of the
     drawing (above the board) -- default `""` (resulting in a blank message).
     * `debug` -- for a larger board drawing that includes the coordinates
@@ -212,13 +216,13 @@ def print_board(board_dict, message="", debug=False, **kwargs):
 #              `-._,-' `-._,-' `-._,-' `-._,-'     `-._,-'"""
 
     # prepare the provided board contents as strings, formatted to size.
-    ran = range(-3, +3+1)
+    ran = range(-3, +3 + 1)
     cells = []
-    for qr in [(q,r) for q in ran for r in ran if -q-r in ran]:
+    for qr in [(q, r) for q in ran for r in ran if -q - r in ran]:
         if qr in board_dict:
-            cell = str(board_dict[qr].current_piece).center(5)
+            cell = str(board_dict[qr]).center(5)
         else:
-            cell = "     " # 5 spaces will fill a cell
+            cell = "     "  # 5 spaces will fill a cell
         cells.append(cell)
 
     # fill in the template to create the board drawing, then print!
