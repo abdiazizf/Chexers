@@ -33,6 +33,8 @@ def main():
     initial_state = Board(board_dict)
     Board.successor_board_states(initial_state)
     print_board(board_dict)
+
+    print(heuristic(initial_state))
 class Board:
     # With hex based the board_state dict will contain a dictionary of hexes
     # coordinates will still be key, hex is now value
@@ -40,12 +42,10 @@ class Board:
     board_state = {}
     valid__ = {}
     pieces = []
+    goal = {'R': [(3, -3), (3,-2) , (3,-1) , (3, 0)] , 'B':[(0, -3), (-1,-2) , (-2,-1) , (-3, 0)] , 'G' :[(-3, 3), (-2, 3) , (-1, 3) , (0, 3)]}
+    target = []
     axial_directions = [(1, 0),(1, -1),(0, -1),(-1, 0),(-1, 1),(0, 1)]
     axial_jump = [(2, 0),(2, -2),(0, -2),(-2, 0),(-2, 2),(0, 2)]
-
-    # Constructor function
-    def empty_hex(self,position):
-        return self.board_state[position].is_occupied
 
 
     def __init__(self, initial_board):
@@ -55,10 +55,11 @@ class Board:
         for entry in initial_board:
             if initial_board[entry] != 'BLK':
                 self.pieces.append(entry)
+                self.target = self.goal[initial_board[entry]]
             self.board_state[entry].is_occupied = True
             self.board_state[entry].occupied_by = initial_board[entry]
 
-
+        print(self.target)
 
     def successor_board_states(self):
         potential_moves = []
@@ -78,6 +79,7 @@ class Board:
             elif self.board_state[i].is_occupied :
                 continue
             legal_moves.append(i)
+
         for i in potential_jump:
             if i[0] not in range(-3, 4) or i[1] not in range(-3, 4):
                 continue
@@ -85,16 +87,13 @@ class Board:
                 continue
             elif self.board_state[(i[0] / 2, i[1] / 2)].is_occupied :
                 legal_jumps.append(i)
-            else :
+            else:
                 continue
 
 
         print(self.pieces[0])
 
         print(legal_jumps)
-
-
-        return
 
 
 
@@ -114,6 +113,22 @@ class GameHex:
         return "S({}, {}, {})".format(self.coordinates, self.is_occupied, self.occupied_by)
 
 
+def sign(x , y) :
+    if x < 0 and y < 0 :
+        return 1
+    elif x>=0 and y>= 0 :
+        return 1
+    else :
+        return 0
+
+def heuristic(board_state):
+
+    distance_x = board_state.target[0][0] - board_state.pieces[0][0]
+    distance_y = board_state.target[0][1] - board_state.pieces[0][1]
+    if sign(distance_x, distance_y):
+        return abs(distance_x + distance_y)
+    else:
+        return max(abs(distance_x), abs(distance_y))
 
 
 def convert_json_to_board_dict(file):
@@ -149,6 +164,8 @@ def convert_json_to_board_dict(file):
 
     # return dict
     return board_dict
+
+
 
 
 def print_board(board_dict, message="", debug=False, **kwargs):
