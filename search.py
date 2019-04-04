@@ -31,7 +31,9 @@ def main():
     # TODO: Search for and output winning sequence of moves
     # ...
     initial_state = Board(board_dict)
-    Board.successor_board_states(initial_state)
+
+    initial_state.successor_board_states()
+
     print_board(board_dict)
 
     print(heuristic(initial_state))
@@ -39,7 +41,9 @@ class Board:
     # With hex based the board_state dict will contain a dictionary of hexes
     # coordinates will still be key, hex is now value
     # Dictionary: tuples (board coordinates) as key, current piece status as value
+
     board_state = {}
+    state = {}
     pieces = []
     goal = {'R': [(3, -3), (3,-2) , (3,-1) , (3, 0)] , 'B':[(0, -3), (-1,-2) , (-2,-1) , (-3, 0)] , 'G' :[(-3, 3), (-2, 3) , (-1, 3) , (0, 3)]}
     target = []
@@ -48,9 +52,10 @@ class Board:
 
 
     def __init__(self, initial_board):
+        self.state = initial_board
         tuples = [(x, y) for x in range(-3,4) for y in range(-3,4)]
         for entry in tuples:
-            self.board_state[entry] = GameHex(entry, False, False)
+            self.board_state[entry] = GameHex(False, False)
         for entry in initial_board:
             if initial_board[entry] != 'BLK':
                 self.pieces.append(entry)
@@ -58,14 +63,13 @@ class Board:
             self.board_state[entry].is_occupied = True
             self.board_state[entry].occupied_by = initial_board[entry]
 
-        print(self.target)
 
     def successor_board_states(self):
         potential_moves = []
         potential_jump = []
-
         legal_moves = []
         legal_jumps =[]
+        successor_states = []
 
         for i in Board.axial_directions :
             potential_moves.append((self.pieces[0][0]+i[0], self.pieces[0][1]+i[1]))
@@ -88,12 +92,20 @@ class Board:
                 legal_jumps.append(i)
             else:
                 continue
+        for entry in legal_jumps :
+            successor_states.append(self.swap_position(self.pieces[0],entry))
+            print_board(self.state)
 
-
-        print(self.pieces[0])
-
-        print(legal_jumps)
-
+    def swap_position(self,move_from, move_to):
+        is_occupied =self.board_state[move_from].is_occupied
+        occupied_by = self.board_state[move_from].occupied_by
+        self.board_state[move_from].is_occupied = self.board_state[move_to].is_occupied
+        self.board_state[move_from].occupied_by = self.board_state[move_to].occupied_by
+        self.board_state[move_to].is_occupied=is_occupied
+        self.board_state[move_to].occupied_by = occupied_by
+        temp = self.state[move_from]
+        self.state[move_from] = self.state[move_to]
+        self.state[move_to] = temp
 
 
 class GameHex:
@@ -102,14 +114,13 @@ class GameHex:
     # Each hex has a co-ordinate
 
 
-    def __init__(self,coordinate,is_occupied,occupied_by):
-        self.coordinates = coordinate
+    def __init__(self,is_occupied,occupied_by):
         self.is_occupied = is_occupied
         self.occupied_by = occupied_by
 
 
     def __str__(self):
-        return "S({}, {}, {})".format(self.coordinates, self.is_occupied, self.occupied_by)
+        return "S({}, {})".format(self.is_occupied, self.occupied_by)
 
 
 def same_sign(x , y) :
@@ -144,24 +155,6 @@ def convert_json_to_board_dict(file):
     # return dict
     return board_dict
 
-
-def convert_json_to_board_dict(file):
-    # Reads colour from the JSON, compares it to a dictionary of values and
-    # sets the correct symbol
-    colour_dict = {'red': 'R', 'blue': 'B', 'green': 'G'}
-    player_colour = colour_dict[file['colour']]
-
-    # Creates an empty dict and constructs an entry for each tuple in JSON, using
-    # predetermined player colour for player pieces and a block otherwise
-    board_dict = {}
-
-    for coordinate in file['pieces']:
-        board_dict[tuple(coordinate)] = player_colour
-    for coordinate in file['blocks']:
-        board_dict[tuple(coordinate)] = 'BLK'
-
-    # return dict
-    return board_dict
 
 
 
