@@ -115,7 +115,7 @@ def same_sign(q , r) :
     if q < 0 and r < 0 :
         return 1
     elif q>=0 and r>= 0 :
-        return 1
+        return 1 
     else :
         return 0
 
