@@ -41,9 +41,7 @@ def main():
     initial_state = Board(board_dict)
     a = initial_state.successor_board_states()
     c = initial_state.successor_board_states()
-    print(a[0] == c[0])
-
-#Class for every node state
+    print(a[0].parent == c[1].parent)
 class State :
     def __init__(self,state,pieces ,parent):
        self.state = state
@@ -54,10 +52,6 @@ class State :
     def __str__(self):
         return str(print_board(self.state))
 
-
-    def __hash__(self):
-        my_tuple = self.state
-        return hash(my_tuple)
 
     def __eq__(self, other):
         return (self.state, self.pieces, self.parent) == (other.state, other.pieces, other.parent)
@@ -115,7 +109,7 @@ def same_sign(q , r) :
     if q < 0 and r < 0 :
         return 1
     elif q>=0 and r>= 0 :
-        return 1 
+        return 1
     else :
         return 0
 
