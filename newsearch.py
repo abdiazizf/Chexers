@@ -21,10 +21,13 @@ import queue as Q
 
 # TODO: Implement search algorithm that finds optimal solution and records
 # the sequence of moves
+
+#possible moves
 axial_directions = [(1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1)]
 axial_jump = [(2, 0), (2, -2), (0, -2), (-2, 0), (-2, 2), (0, 2)]
+#goal for each colour
 goal = {'R': [(3, -3), (3,-2) , (3,-1) , (3, 0)] , 'B':[(0, -3), (-1,-2) , (-2,-1) , (-3, 0)] , 'G' :[(-3, 3), (-2, 3) , (-1, 3) , (0, 3)]}
-invalid_moves = [(-3, -1), (-3, -2), (-3, -3), (-2, -2), (-2, -3), (-1, -3),(2, 2), (2, 3), (1, 3), (3, 1), (3, 2), (3, 3)]
+
 
 def main():
 
@@ -38,20 +41,16 @@ def main():
     initial_state = Board(board_dict)
     a = initial_state.successor_board_states()
     c = initial_state.successor_board_states()
-
     print(a[0] == c[0])
 
+#Class for every node state
 class State :
-    def __init__(self,state,piece,parent ):
+    def __init__(self,state,pieces ,parent):
        self.state = state
-       self.pieces = piece
+       self.pieces = pieces
        self.parent = parent
 
-    def swap_position(self):
-        temp = self.state[self.pieces[0]]
-        self.state[self.pieces[0]] = self.state[self.parent]
-        self.state[self.parent] = temp
-
+    #prints object as a board and not memory location of object
     def __str__(self):
         return str(print_board(self.state))
 
@@ -59,6 +58,7 @@ class State :
     def __hash__(self):
         my_tuple = self.state
         return hash(my_tuple)
+
     def __eq__(self, other):
         return (self.state, self.pieces, self.parent) == (other.state, other.pieces, other.parent)
 
@@ -102,19 +102,19 @@ class Board:
             else:
                 continue
         for each in legal_moves:
-           state = State(copy.deepcopy(self.state),self.pieces, each)
-           state.swap_position()
+           new_state = copy.deepcopy(self.state)
+           temp = new_state[self.pieces[0]]
+           new_state[self.pieces[0]] = new_state[each]
+           new_state[each] = temp
+           state = State(new_state,self.pieces[0], self)
            successor_states.append(state)
 
         return successor_states
 
-
-
-
-def same_sign(x , y) :
-    if x < 0 and y < 0 :
+def same_sign(q , r) :
+    if q < 0 and r < 0 :
         return 1
-    elif x>=0 and y>= 0 :
+    elif q>=0 and r>= 0 :
         return 1
     else :
         return 0
@@ -163,7 +163,7 @@ def convert_json_to_board_dict(file):
     # sets the correct symbol
     colour_dict = {'red' : 'R','blue': 'B','green':'G'}
     player_colour = colour_dict[file['colour']]
-    coordinates = [(x, y) for x in range(-3, 4) for y in range(-3, 4)]
+    coordinates = [(q, r) for q in range(-3, 4) for r in range(-3, 4) if -q - r in range(-3, 4)]
     # Creates an empty dict and constructs an entry for each tuple in JSON, using
     # predetermined player colour for player pieces and a block otherwise
     board_dict = {}
@@ -173,7 +173,7 @@ def convert_json_to_board_dict(file):
     for coordinate in file['blocks']:
         board_dict[tuple(coordinate)] = 'BLK'
     for coordinate in coordinates :
-        if coordinate not in board_dict and coordinate not in invalid_moves:
+        if coordinate not in board_dict:
             board_dict[coordinate]= None
 
     # return dict
