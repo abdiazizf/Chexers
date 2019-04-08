@@ -28,36 +28,30 @@ axial_jump = [(2, 0), (2, -2), (0, -2), (-2, 0), (-2, 2), (0, 2)]
 #goal for each colour
 goal = {'R': [(3, -3), (3,-2) , (3,-1) , (3, 0)] , 'B':[(0, -3), (-1,-2) , (-2,-1) , (-3, 0)] , 'G' :[(-3, 3), (-2, 3) , (-1, 3) , (0, 3)]}
 
-
 def main():
-
 
     with open(sys.argv[1]) as file:
         data = json.load(file)
 
     board_dict = convert_json_to_board_dict(data)
+    print_board(board_dict)
     # TODO: Search for and output winning sequence of moves
     # ...
-    initial_state = Board(board_dict)
-    a = initial_state.successor_board_states()
-    c = initial_state.successor_board_states()
-    print(a[0].parent == c[1].parent)
+
+
 class State :
-    def __init__(self,state,pieces ,parent):
+    def __init__(self,state,pieces,move, parent):
        self.state = state
-       self.pieces = pieces
+       self.pieces = move
        self.parent = parent
+       self.heuristic = heuristic(parent.targets, self.pieces)
 
     #prints object as a board and not memory location of object
     def __str__(self):
         return str(print_board(self.state))
 
-
     def __eq__(self, other):
-        return (self.state, self.pieces, self.parent) == (other.state, other.pieces, other.parent)
-
-
-
+        return self.state == other.state
 
 class Board:
     # With hex based the board_state dict will contain a dictionary of hexes
@@ -66,86 +60,84 @@ class Board:
     state = {}
     pieces = []
     goal_state = []
-    target = []
-
+    targets = []
+    heuristic_list = []
 
     def __init__(self, initial_board):
+        self.number_moves = 0
         self.state = initial_board
         self.parent = None
         for entry in initial_board:
             if initial_board[entry] in goal:
                 self.pieces.append(entry)
-                self.target = goal[initial_board[entry]]
-
+                self.targets = goal[initial_board[entry]]
+            self.heuristic= heuristic(self.targets, self.pieces)
 
     def successor_board_states(self):
-        legal_moves = []
+        legal_moves = {}
         successor_states = []
-        for i in axial_directions:
-            potential_moves = (self.pieces[0][0]+i[0], self.pieces[0][1]+i[1])
-            if potential_moves not in self.state or self.state[potential_moves] is not None:
-                continue
-            legal_moves.append(potential_moves)
+        for piece in self.pieces:
+            legal_moves[piece] = []
+            for i in axial_directions:
+                potential_moves = (piece[0]+i[0], piece[1]+i[1])
+                if potential_moves not in self.state or self.state[potential_moves] is not None:
+                    continue
+                legal_moves[piece].append(potential_moves)
+            for i in axial_jump :
+                potential_jump = (piece[0] + i[0], piece[1] + i[1])
+                if potential_jump not in self.state or self.state[potential_jump] is not None:
+                    continue
+                elif self.state[(potential_jump[0] - (i[0]/2), potential_jump[1] - (i[1] / 2))] is not None:
+                    legal_moves[piece].append(potential_jump)
+                else:
+                    continue
 
-        for i in axial_jump :
-            potential_jump = (self.pieces[0][0] + i[0], self.pieces[0][1] + i[1])
-            if potential_jump not in self.state or self.state[potential_jump] is not None:
-                continue
-            elif self.state[(potential_jump[0] - (i[0]/2), potential_jump[1] - (i[1] / 2))] is not None:
-                legal_moves.append(potential_jump)
-            else:
-                continue
-        for each in legal_moves:
-           new_state = copy.deepcopy(self.state)
-           temp = new_state[self.pieces[0]]
-           new_state[self.pieces[0]] = new_state[each]
-           new_state[each] = temp
-           state = State(new_state,self.pieces[0], self)
-           successor_states.append(state)
+        for each, value in legal_moves.items():
+            for move in value :
+                new_state = State(copy.deepcopy(self.state), copy.deepcopy(self.pieces), move, self)
+                temp = new_state.state[each]
+                new_state.state[each] = new_state[value]
+                new_state[value] = temp
+                successor_states.append(new_state)
 
         return successor_states
 
-def same_sign(q , r) :
-    if q < 0 and r < 0 :
-        return 1
-    elif q>=0 and r>= 0 :
-        return 1
-    else :
-        return 0
+
+def same_sign(q, r):
+    return (q < 0 and r < 0) or (q >= 0 and r >= 0)
+
 
 def heuristic(target, source):
+    heuristics = 0
 
-  # if board_state.board_state[goal].is_occupied:
-  #     heuristic_list.append(9999)
-  ##     continue
-    distance_x = target[0] - source[0]
-    distance_y = target[1] - source[1]
-    if same_sign(distance_x, distance_y):
-        heuristic = abs(distance_x + distance_y)
-    else:
-        heuristic = max(abs(distance_x), abs(distance_y))
-    return heuristic
+    for each in source :
+        to_target = []
+        for every in target :
+            distance_x = every[0] - each[0]
+            distance_y = every[1] - each[1]
+            if same_sign(distance_x, distance_y):
+                to_target.append(abs(distance_x + distance_y))
+            else:
+                to_target.append(max(abs(distance_x), abs(distance_y)))
+        heuristics += min(to_target)
 
-def search(initial_state) :
+    return heuristics
+
+
+def search(initial_state):
 
     queue = Q.PriorityQueue()
     queue.put(initial_state, 0)
-    cost_so_far = {}
-    cost_so_far[initial_state] = 0
-    came_from = {}
-    came_from[initial_state] = None
-
     while not queue.empty():
-
         current_node = queue.get()
         current_state = current_node.state()
-        if current_state.piece[0] in initial_state.target:
+        if current_node.piece[0] in initial_state.target:
             break
-        for successor in initial_state.successor_board_states():
-            new_cost = cost_so_far[current_state] + 1
+        for successor in current_node.successor_board_states():
+
             if successor not in cost_so_far or new_cost < cost_so_far[successor]:
                 cost_so_far[successor] = new_cost
-                priority = new_cost + heuristic(initial_state.target[0] , successor)
+                priority = new_cost + heuristic(initial_state.target[0], successor.piece)
                 queue.put(successor, priority)
                 came_from[successor] = current_state
 
@@ -155,7 +147,7 @@ def search(initial_state) :
 def convert_json_to_board_dict(file):
     # Reads colour from the JSON, compares it to a dictionary of values and
     # sets the correct symbol
-    colour_dict = {'red' : 'R','blue': 'B','green':'G'}
+    colour_dict = {'red' : 'R', 'blue': 'B', 'green': 'G'}
     player_colour = colour_dict[file['colour']]
     coordinates = [(q, r) for q in range(-3, 4) for r in range(-3, 4) if -q - r in range(-3, 4)]
     # Creates an empty dict and constructs an entry for each tuple in JSON, using
