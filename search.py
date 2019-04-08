@@ -22,6 +22,7 @@ import queue as Q
 
 #possible moves
 axial_directions = [(1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1)]
+#possible jumos
 axial_jump = [(2, 0), (2, -2), (0, -2), (-2, 0), (-2, 2), (0, 2)]
 #goal for each colour
 goal = {'R': [(3, -3), (3,-2) , (3,-1) , (3, 0)] , 'B':[(0, -3), (-1,-2) , (-2,-1) , (-3, 0)] , 'G' :[(-3, 3), (-2, 3) , (-1, 3) , (0, 3)]}
@@ -31,28 +32,31 @@ def main():
 
     with open(sys.argv[1]) as file:
         data = json.load(file)
+    #converts board to dict
 
     board_dict = convert_json_to_board_dict(data)
     pieces, target = create_piece_and_target_list(board_dict)
-
+    #returns state of last piece
     a = search(board_dict,pieces,target)
-    print_board(a.state)
-
+    path = []
+    while a :
+        path.insert(0 ,a.pieces[0])
+        a=a.parent
+    print(path)
 #Class for every node state
 class State :
-    def __init__(self,state,pieces,parent,cost,action,target):
+    def __init__(self,state,pieces,parent,cost,target):
        self.state = state
        self.pieces = pieces
        self.parent = parent
        self.cost = cost
-       self.action = action
        self.target = target
+       self.cost
+
 
     #prints object as a board and not memory location of object
     def __str__(self):
-        return str(print_board(self.state))
-
-
+        return str(self.parent.action)
     def __hash__(self):
         my_tuple = self.state
         return hash(my_tuple)
@@ -60,7 +64,7 @@ class State :
     def __eq__(self, other):
         return (self.state, self.pieces, self.parent) == (other.state, other.pieces, other.parent)
     def __lt__(self,other):
-        return self.cost< other.cost
+        return self.cost < other.cost
 
     def successor_board_states(self):
         legal_moves = []
@@ -80,25 +84,24 @@ class State :
             else:
                 continue
 
+        #CREATE NEW STATE FOR EVERY POSSIBLE MOVE Ill maybe create a new method for this
         for each in legal_moves:
-            action = (each[0] - self.pieces[0][0], each[1] - self.pieces[0][1])
             new_state = copy.deepcopy(self.state)
             new_piece = copy.deepcopy(self.pieces)
             temp = new_state[each]
             new_state[each]= new_state[new_piece[0]]
             new_state[new_piece[0]] = temp
             new_piece[0] = each
-
-            state = State(new_state,new_piece,self,self.cost + 1 ,action,self.target)
+            state = State(new_state,new_piece,self,self.cost + 1 ,self.target)
             successor_states.append(state)
 
         return successor_states
 
 def same_sign(q , r) :
-    if q < 0 and r < 0 :
-        return (q < 0 and r < 0)or (q>=0 and r>= 0)
+    return (q < 0 and r < 0)or (q>=0 and r>= 0)
 
 
+#returns minimum distance to any target
 def heuristic(target, source):
     heuristic_list= []
     for goal in target:
@@ -115,21 +118,23 @@ def heuristic(target, source):
 
 
 def search(initial_state, pieces , target) :
-    initial_state = State(initial_state,pieces,None,0,None,target)
-    queue = Q.PriorityQueue()
-    queue.put(initial_state, initial_state.cost)
-    cost_so_far = {}
-    cost_so_far[tuple(initial_state.state.items())] = initial_state.cost
+    i = 0
+    initial_state = State(initial_state,pieces,None,0,target)  #initialise first state
+    queue = Q.PriorityQueue()                                       #create Priority queue
+    queue.put(initial_state, initial_state.cost)                    #put initial state in queue
+    vistited_states = {}                                            #create empty dictionary for visited_nodes
+    vistited_states[tuple(initial_state.state.items())] = initial_state.cost #create dictionary
+
     while not queue.empty():
         current_node = queue.get()
-        if current_node.pieces[0] in current_node.target:
+        if current_node.pieces[i] in current_node.target:
             break
         for successor in current_node.successor_board_states():
             new_cost = successor.cost
-            if tuple(successor.state.items()) not in cost_so_far or new_cost < cost_so_far[tuple(successor.state.items())]:
-                cost_so_far[tuple(successor.state.items())] = new_cost
-                priority = new_cost + heuristic(initial_state.target , successor.pieces[0])
+            if tuple(successor.state.items()) not in vistited_states:
+                priority = new_cost + heuristic(initial_state.target, successor.pieces[i])
                 queue.put(successor, priority)
+
     return current_node
 
 
@@ -155,13 +160,19 @@ def convert_json_to_board_dict(file):
 
     return board_dict
 
+#creates a kust of all the pieces
+#creates a list of all the possible target nodes (ie theres a block on one target so we cant use it
+
 def create_piece_and_target_list(board_dict):
     pieces = []
     for entry in board_dict:
         if board_dict[entry] in goal:
             pieces.append(entry)
-            target = goal[board_dict[entry]]
-        return pieces, target
+            targets = goal[board_dict[entry]]
+    for i in targets:
+        if board_dict[i] == 'BLK':
+            targets.remove(i)
+        return pieces, targets
 
 
 def print_board(board_dict, message="", debug=False, **kwargs):
