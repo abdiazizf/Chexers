@@ -103,7 +103,6 @@ def same_sign(q , r) :
 
 #returns minimum distance to any target
 def heuristic(target, source):
-
     heuristic = 0
     for each in source :
         heuristic_list = []
