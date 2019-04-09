@@ -47,6 +47,7 @@ def main():
     path = []
     while a :
         path.insert(0 ,a.pieces)
+        print_board(a.state)
         a=a.parent
     print(path)
     
@@ -114,7 +115,7 @@ class State :
             #instead of swapping pieces want to delete one 
             del new_piece[index]
             new_state[move] = None
-            state = State(new_state,new_piece,self,self.cost + 1 ,self.target)
+            state = State(new_state,new_piece,self,0,self.target)
             successor_states.append(state)
 
         for each in legal_moves:
@@ -194,6 +195,9 @@ def search(initial_state, pieces , target) :
     while not queue.empty():
         current_node = queue.get()
 
+        #if current_node.pieces[0] in current_node.target:
+            #print("on_target")
+        
         if not current_node.pieces:
             return current_node      
         
