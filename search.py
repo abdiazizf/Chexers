@@ -46,7 +46,7 @@ def main():
     print_board(a.state, debug=True)
     path = []
     while a :
-        path.insert(0 ,a.pieces[0])
+        path.insert(0 ,a.pieces)
         a=a.parent
     print(path)
     
@@ -79,14 +79,14 @@ class State :
         successor_states = []
         exit_moves = []
         for piece in self.pieces:
+            
+            if piece in self.target:
+                # exit move applies 
+                exit_moves.append(piece)
+                
             for i in axial_directions:
                 potential_moves = (piece[0]+i[0], piece[1]+i[1])
                 
-
-                # Add EXIT check here 
-                if potential_moves in exit_hexes:
-                    exit_moves.append(potential_moves)
-                    
                 if potential_moves not in self.state or self.state[potential_moves] is not None:
                     continue
                 legal_moves.append(potential_moves)
@@ -105,8 +105,18 @@ class State :
 
         #CREATE NEW STATE FOR EVERY POSSIBLE MOVE Ill maybe create a new method for this
         index = 0
-        if(exit_moves):
-            print(exit_moves)
+
+        for move in exit_moves:
+            index = self.pieces.index(move)
+            new_state = copy.deepcopy(self.state)
+            new_piece = copy.deepcopy(self.pieces)
+            
+            #instead of swapping pieces want to delete one 
+            del new_piece[index]
+            new_state[move] = None
+            state = State(new_state,new_piece,self,self.cost + 1 ,self.target)
+            successor_states.append(state)
+
         for each in legal_moves:
             for piece in self.pieces:
                 if valid_move_for_piece(piece, each): 
@@ -122,20 +132,7 @@ class State :
             state = State(new_state,new_piece,self,self.cost + 1 ,self.target)
             successor_states.append(state)
             
-        for move in exit_moves:
-            for piece in self.pieces:
-                if valid_move_for_piece(piece, move): 
-                    # Create state from move for desire piece
-                    index = self.pieces.index(piece)
-            
-            new_state = copy.deepcopy(self.state)
-            new_piece = copy.deepcopy(self.pieces)
-            
-            #instead of swapping pieces want to delete one 
-            del new_piece[index]
-            state = State(new_state,new_piece,self,self.cost + 1 ,self.target)
-            successor_states.append(state)
-            print_board(state)
+
 
         return successor_states
 
@@ -198,16 +195,15 @@ def search(initial_state, pieces , target) :
         current_node = queue.get()
         # this                 |  is why it only works for one piece 
         #                      |
-        # goal check           v
-        if current_node.pieces[0] in current_node.target:
-            for successor in current_node.successor_board_states():
-                print(successor.state)
-            break
+        # goal check  
+        if not current_node.pieces:
+            return current_node
+            break         
         
+
         
         # define goal state as a board with no pieces on it
-        if not current_node.pieces:
-            break
+
         
         # generate successor states of current node 
         for successor in current_node.successor_board_states():
