@@ -47,7 +47,7 @@ def main():
     path = []
     while a :
         path.insert(0 ,a.pieces)
-        print_board(a.state)
+        print_board(a.state,debug=True)
         a=a.parent
     print(path)
     
@@ -142,6 +142,10 @@ def valid_move_for_piece(piece,move):
     for direction in axial_directions:
         new_move = piece[0]+direction[0], piece[1]+direction[1]
         if new_move == move:
+            return True
+    for jump in axial_jump:
+        new_jump = piece[0] + jump[0], piece[1] + jump[1]
+        if new_jump == move:
             return True
     return False
 
