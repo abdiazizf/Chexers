@@ -43,6 +43,7 @@ def main():
     
     #returns state of last piece
     a = search(board_dict,pieces,target)
+    print_board(a.state, debug=True)
     path = []
     while a :
         path.insert(0 ,a.pieces[0])
@@ -81,6 +82,7 @@ class State :
             for i in axial_directions:
                 potential_moves = (piece[0]+i[0], piece[1]+i[1])
                 
+
                 # Add EXIT check here 
                 if potential_moves in exit_hexes:
                     exit_moves.append(potential_moves)
@@ -102,12 +104,15 @@ class State :
          
 
         #CREATE NEW STATE FOR EVERY POSSIBLE MOVE Ill maybe create a new method for this
+        index = 0
+        if(exit_moves):
+            print(exit_moves)
         for each in legal_moves:
             for piece in self.pieces:
                 if valid_move_for_piece(piece, each): 
                     # Create state from move for desire piece
                     index = self.pieces.index(piece)
-            index = 0       
+
             new_state = copy.deepcopy(self.state)
             new_piece = copy.deepcopy(self.pieces)
             temp = new_state[each]
@@ -116,7 +121,21 @@ class State :
             new_piece[index] = each
             state = State(new_state,new_piece,self,self.cost + 1 ,self.target)
             successor_states.append(state)
-
+            
+        for move in exit_moves:
+            for piece in self.pieces:
+                if valid_move_for_piece(piece, move): 
+                    # Create state from move for desire piece
+                    index = self.pieces.index(piece)
+            
+            new_state = copy.deepcopy(self.state)
+            new_piece = copy.deepcopy(self.pieces)
+            
+            #instead of swapping pieces want to delete one 
+            del new_piece[index]
+            state = State(new_state,new_piece,self,self.cost + 1 ,self.target)
+            successor_states.append(state)
+            print_board(state)
 
         return successor_states
 
@@ -181,14 +200,14 @@ def search(initial_state, pieces , target) :
         #                      |
         # goal check           v
         if current_node.pieces[0] in current_node.target:
+            for successor in current_node.successor_board_states():
+                print(successor.state)
             break
         
-        # define goal state as a board with no pieces on it
-        # if current_node == goal_state:
-        #   break
         
-        #if not current_node.pieces:
-        #    break
+        # define goal state as a board with no pieces on it
+        if not current_node.pieces:
+            break
         
         # generate successor states of current node 
         for successor in current_node.successor_board_states():
@@ -220,7 +239,6 @@ def convert_json_to_board_dict(file):
         if coordinate not in board_dict:
             board_dict[coordinate]= None
 
-    # return dict
 
     return board_dict
 
@@ -236,7 +254,7 @@ def create_piece_and_target_list(board_dict):
     for i in targets:
         if board_dict[i] == 'BLK':
             targets.remove(i)
-        return pieces, targets
+    return pieces, targets
 
 
 def print_board(board_dict, message="", debug=False, **kwargs):
