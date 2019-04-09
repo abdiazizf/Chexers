@@ -103,22 +103,24 @@ def same_sign(q , r) :
 
 #returns minimum distance to any target
 def heuristic(target, source):
-    heuristic_list= []
-    for goal in target:
-        distance_x = goal[0] - source[0]
-        distance_y = goal[1] - source[1]
-        if same_sign(distance_x, distance_y):
-            heuristic_list.append(abs(distance_x + distance_y))
-        else:
-            heuristic_list.append(max(abs(distance_x), abs(distance_y)))
 
-    return min(heuristic_list)
+    heuristic = 0
+    for each in source :
+        heuristic_list = []
+        for goal in target:
+            distance_x = goal[0] - each[0]
+            distance_y = goal[1] - each[1]
+            if same_sign(distance_x, distance_y):
+                heuristic_list.append(abs(distance_x + distance_y))
+            else:
+                heuristic_list.append(max(abs(distance_x), abs(distance_y)))
+        heuristic += min(heuristic_list)
+    return  heuristic
 
 
 
 
 def search(initial_state, pieces , target) :
-    i = 0
     initial_state = State(initial_state,pieces,None,0,target)  #initialise first state
     queue = Q.PriorityQueue()                                       #create Priority queue
     queue.put(initial_state, initial_state.cost)                    #put initial state in queue
@@ -127,12 +129,12 @@ def search(initial_state, pieces , target) :
 
     while not queue.empty():
         current_node = queue.get()
-        if current_node.pieces[i] in current_node.target:
+        if current_node.pieces[0] in current_node.target:
             break
         for successor in current_node.successor_board_states():
             new_cost = successor.cost
             if tuple(successor.state.items()) not in vistited_states:
-                priority = new_cost + heuristic(initial_state.target, successor.pieces[i])
+                priority = new_cost + heuristic(initial_state.target, successor.pieces)
                 queue.put(successor, priority)
 
     return current_node
