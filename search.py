@@ -193,17 +193,9 @@ def search(initial_state, pieces , target) :
 
     while not queue.empty():
         current_node = queue.get()
-        # this                 |  is why it only works for one piece 
-        #                      |
-        # goal check  
+
         if not current_node.pieces:
-            return current_node
-            break         
-        
-
-        
-        # define goal state as a board with no pieces on it
-
+            return current_node      
         
         # generate successor states of current node 
         for successor in current_node.successor_board_states():
