@@ -3,7 +3,8 @@
 COMP30024 Artificial Intelligence, Semester 1 2019
 Solution to Project Part A: Searching
 Authors: Abdiaziz Farah, Jordan Puckridge
-HEX BASED IMPLEMENTATION
+
+
 """
 
 import sys
@@ -11,20 +12,11 @@ import json
 import copy
 import queue as Q
 
-# TODO: Implement a move function for board to check for a valid move and then swap pieces
-# Also needs to print the specified output according to the project spec
-
-# TODO: Implement a distance function to calculate how far it is from a hex to
-# the nearest goal space, to use in a heuristic evaluation
-
-# TODO: Implement search algorithm that finds optimal solution and records
-# the sequence of moves
-
-#possible moves
+#possible move directions
 axial_directions = [(1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1)]
-#possible jumos
+#possible jump directions
 axial_jump = [(2, 0), (2, -2), (0, -2), (-2, 0), (-2, 2), (0, 2)]
-#goal for each colour
+#goal hex for each colour
 goal = {'R': [(3, -3), (3,-2) , (3,-1) , (3, 0)] , 'B':[(0, -3), (-1,-2) , (-2,-1) , (-3, 0)] , 'G' :[(-3, 3), (-2, 3) , (-1, 3) , (0, 3)]}
 # off board co-ordinates for generating valid exit moves  
 exit_hexes = {'R': [(4, -3),(4,-2),(4,-1)] , 'B':[(-3,-1),(-2,-2),(-1,-3)] , 'G' :[(-3,4),(-2,4),(-1,4)]}
@@ -163,6 +155,8 @@ class State :
 
         return successor_states
 
+
+# Checks if a move is valid for a specific piece
 def valid_move_for_piece(piece,move):
     
     for direction in axial_directions:
@@ -175,6 +169,8 @@ def valid_move_for_piece(piece,move):
             return True
     return False
 
+# For hex distance calculation, checks whether the values q and r are 
+# both positive or negative
 def same_sign(q , r) :
     return (q < 0 and r < 0)or (q>=0 and r>= 0)
 
@@ -190,7 +186,7 @@ def hex_distance(origin, goal):
     
     return 
 
-#returns minimum distance to any target
+#returns the sum of distances for each piece to the nearest target
 def heuristic(target, source):
     heuristic = 0
     for piece in source :
@@ -225,13 +221,14 @@ def search(initial_state, pieces , target) :
 
     return current_node
 
-
+# Reads colour from the JSON, compares it to a dictionary of values and
+# sets the correct symbol
 def convert_json_to_board_dict(file):
-    # Reads colour from the JSON, compares it to a dictionary of values and
-    # sets the correct symbol
+
     colour_dict = {'red' : 'R','blue': 'B','green':'G'}
     player_colour = colour_dict[file['colour']]
     coordinates = [(q, r) for q in range(-3, 4) for r in range(-3, 4) if -q - r in range(-3, 4)]
+    
     # Creates an empty dict and constructs an entry for each tuple in JSON, using
     # predetermined player colour for player pieces and a block otherwise
     board_dict = {}
