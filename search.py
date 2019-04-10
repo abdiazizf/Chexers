@@ -1,168 +1,267 @@
+
 """
 COMP30024 Artificial Intelligence, Semester 1 2019
 Solution to Project Part A: Searching
-
 Authors: Abdiaziz Farah, Jordan Puckridge
 
 
-HEX BASED IMPLEMENTATION
 """
 
 import sys
 import json
+import copy
+import queue as Q
 
-# TODO: Implement a move function for board to check for a valid move and then swap pieces
-# Also needs to print the specified output according to the project spec
-
-# TODO: Implement a distance function to calculate how far it is from a hex to
-# the nearest goal space, to use in a heuristic evaluation
-
-# TODO: Implement search algorithm that finds optimal solution and records
-# the sequence of moves
-
+#possible move directions
+axial_directions = [(1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1)]
+#possible jump directions
+axial_jump = [(2, 0), (2, -2), (0, -2), (-2, 0), (-2, 2), (0, 2)]
+#goal hex for each colour
+goal = {'R': [(3, -3), (3,-2) , (3,-1) , (3, 0)] , 'B':[(0, -3), (-1,-2) , (-2,-1) , (-3, 0)] , 'G' :[(-3, 3), (-2, 3) , (-1, 3) , (0, 3)]}
+# off board co-ordinates for generating valid exit moves  
+exit_hexes = {'R': [(4, -3),(4,-2),(4,-1)] , 'B':[(-3,-1),(-2,-2),(-1,-3)] , 'G' :[(-3,4),(-2,4),(-1,4)]}
 
 def main():
 
 
     with open(sys.argv[1]) as file:
         data = json.load(file)
-
+        
+    #converts board to dict
     board_dict = convert_json_to_board_dict(data)
-    # TODO: Search for and output winning sequence of moves
-    # ...
-    initial_state = Board(board_dict)
+    pieces, target = create_piece_and_target_list(board_dict)
+    
+    print_board(board_dict,debug=True)
+    
+    #returns state of last piece
+    a = search(board_dict,pieces,target)
+    path = []
+    solution_moves = []
+    while a :
+        path.insert(0 ,a.pieces)
+        solution_moves.insert(0, a.move)
+        a=a.parent
+    
+    for each_move in solution_moves:
+        if each_move:
+            each_move.print_move()
 
-    initial_state.successor_board_states()
+    
+# Stores the details of a move on the board
+class Move : 
+    def __init__(self,origin,destination,movetype):
+        self.origin = origin
+        self.destination = destination
+        self.movetype = movetype
+    
+    # prints output for current move
+    def print_move(self):
+        if self.movetype == "JUMP":
+            print("JUMP from ",self.origin," to ",self.destination,".")
+        elif self.movetype == "MOVE":
+            print("MOVE from ",self.origin," to ",self.destination,".")
+        elif self.movetype == "EXIT":
+            print("EXIT from ",self.origin,".")
+    
+#Class for every node state
+class State :
+    def __init__(self,state,pieces,parent,cost,target,move=None):
+        self.state = state
+        self.pieces = pieces
+        self.parent = parent
+        self.cost = cost
+        self.target = target
+        self.cost
+        self.move = move
 
-    print_board(board_dict)
 
-    print(heuristic(initial_state))
-class Board:
-    # With hex based the board_state dict will contain a dictionary of hexes
-    # coordinates will still be key, hex is now value
-    # Dictionary: tuples (board coordinates) as key, current piece status as value
+    #prints object as a board and not memory location of object
+    def __str__(self):
+        return str(self.parent.action)
+    def __hash__(self):
+        my_tuple = self.state
+        return hash(my_tuple)
 
-    board_state = {}
-    state = {}
-    pieces = []
-    goal = {'R': [(3, -3), (3,-2) , (3,-1) , (3, 0)] , 'B':[(0, -3), (-1,-2) , (-2,-1) , (-3, 0)] , 'G' :[(-3, 3), (-2, 3) , (-1, 3) , (0, 3)]}
-    target = []
-    axial_directions = [(1, 0),(1, -1),(0, -1),(-1, 0),(-1, 1),(0, 1)]
-    axial_jump = [(2, 0),(2, -2),(0, -2),(-2, 0),(-2, 2),(0, 2)]
-
-
-    def __init__(self, initial_board):
-        self.state = initial_board
-        tuples = [(x, y) for x in range(-3,4) for y in range(-3,4)]
-        for entry in tuples:
-            self.board_state[entry] = GameHex(False, False)
-        for entry in initial_board:
-            if initial_board[entry] != 'BLK':
-                self.pieces.append(entry)
-                self.target = self.goal[initial_board[entry]]
-            self.board_state[entry].is_occupied = True
-            self.board_state[entry].occupied_by = initial_board[entry]
-
+    def __eq__(self, other):
+        return (self.state, self.pieces, self.parent) == (other.state, other.pieces, other.parent)
+    def __lt__(self,other):
+        return self.cost < other.cost
 
     def successor_board_states(self):
-        potential_moves = []
-        potential_jump = []
         legal_moves = []
-        legal_jumps =[]
         successor_states = []
+        exit_moves = []
+        for piece in self.pieces:
+            
+            if piece in self.target:
+                # exit move applies 
+                exit_moves.append(piece)
+                
+            for i in axial_directions:
+                potential_moves = (piece[0]+i[0], piece[1]+i[1])
+                
+                if potential_moves not in self.state or self.state[potential_moves] is not None:
+                    continue
+                legal_moves.append(potential_moves)
+                
+    
+            for i in axial_jump :
+                potential_jump = (piece[0] + i[0], piece[1] + i[1])
+                if potential_jump not in self.state or self.state[potential_jump] is not None:
+                    continue
+                elif self.state[(potential_jump[0] - (i[0]/2), potential_jump[1] - (i[1] / 2))] is not None:
+                    legal_moves.append(potential_jump)
+                else:
+                    continue
+            
+         
 
-        for i in Board.axial_directions :
-            potential_moves.append((self.pieces[0][0]+i[0], self.pieces[0][1]+i[1]))
-        for i in Board.axial_jump :
-            potential_jump.append((self.pieces[0][0] + i[0], self.pieces[0][1] + i[1]))
+        #CREATE NEW STATE FOR EVERY POSSIBLE MOVE Ill maybe create a new method for this
+        index = 0
 
-        for i in potential_moves :
-            if i[0] not  in range(-3,4) or  i[1] not in range(-3,4):
-               continue
-            elif self.board_state[i].is_occupied :
-                continue
-            legal_moves.append(i)
+        for move in exit_moves:
+            index = self.pieces.index(move)
+            new_state = copy.deepcopy(self.state)
+            new_piece = copy.deepcopy(self.pieces)
+            
+            generated_by_move = Move(move,move,"EXIT")
+            
+            #instead of swapping pieces want to delete one 
+            del new_piece[index]
+            new_state[move] = None
+            state = State(new_state,new_piece,self,0,self.target,generated_by_move)
+            successor_states.append(state)
 
-        for i in potential_jump:
-            if i[0] not in range(-3, 4) or i[1] not in range(-3, 4):
-                continue
-            elif self.board_state[i].is_occupied :
-                continue
-            elif self.board_state[(i[0] / 2, i[1] / 2)].is_occupied :
-                legal_jumps.append(i)
-            else:
-                continue
-        for entry in legal_jumps :
-            successor_states.append(self.swap_position(self.pieces[0],entry))
-            print_board(self.state)
+        for each in legal_moves:
+            for piece in self.pieces:
+                if valid_move_for_piece(piece, each): 
+                    # Create state from move for desire piece
+                    index = self.pieces.index(piece)
+                    if hex_distance(piece, each) == 1:
+                        generated_by_move = Move(piece,each,"MOVE")
+                    else:
+                        generated_by_move = Move(piece,each,"JUMP")
 
-    def swap_position(self,move_from, move_to):
-        is_occupied =self.board_state[move_from].is_occupied
-        occupied_by = self.board_state[move_from].occupied_by
-        self.board_state[move_from].is_occupied = self.board_state[move_to].is_occupied
-        self.board_state[move_from].occupied_by = self.board_state[move_to].occupied_by
-        self.board_state[move_to].is_occupied=is_occupied
-        self.board_state[move_to].occupied_by = occupied_by
-        temp = self.state[move_from]
-        self.state[move_from] = self.state[move_to]
-        self.state[move_to] = temp
-
-
-class GameHex:
-
-    # Could possibly define a game board as a collection of hexes.
-    # Each hex has a co-ordinate
+            new_state = copy.deepcopy(self.state)
+            new_piece = copy.deepcopy(self.pieces)
+            temp = new_state[each]
+            new_state[each]= new_state[new_piece[index]]
+            new_state[new_piece[index]] = temp
+            new_piece[index] = each
+            state = State(new_state,new_piece,self,self.cost + 1 ,self.target,generated_by_move)
+            successor_states.append(state)
+            
 
 
-    def __init__(self,is_occupied,occupied_by):
-        self.is_occupied = is_occupied
-        self.occupied_by = occupied_by
+        return successor_states
 
 
-    def __str__(self):
-        return "S({}, {})".format(self.is_occupied, self.occupied_by)
+# Checks if a move is valid for a specific piece
+def valid_move_for_piece(piece,move):
+    
+    for direction in axial_directions:
+        new_move = piece[0]+direction[0], piece[1]+direction[1]
+        if new_move == move:
+            return True
+    for jump in axial_jump:
+        new_jump = piece[0] + jump[0], piece[1] + jump[1]
+        if new_jump == move:
+            return True
+    return False
 
+# For hex distance calculation, checks whether the values q and r are 
+# both positive or negative
+def same_sign(q , r) :
+    return (q < 0 and r < 0)or (q>=0 and r>= 0)
 
-def same_sign(x , y) :
-    if x < 0 and y < 0 :
-        return 1
-    elif x>=0 and y>= 0 :
-        return 1
-    else :
-        return 0
-
-def heuristic(board_state):
-    distance_x = board_state.target[0][0] - board_state.pieces[0][0]
-    distance_y = board_state.target[0][1] - board_state.pieces[0][1]
+# returns the distance between two axial hex coordinates
+def hex_distance(origin, goal):
+    
+    distance_x = goal[0] - origin[0]
+    distance_y = goal[1] - origin[1]
     if same_sign(distance_x, distance_y):
         return abs(distance_x + distance_y)
     else:
         return max(abs(distance_x), abs(distance_y))
+    
+    return 
+
+#returns the sum of distances for each piece to the nearest target
+def heuristic(target, source):
+    heuristic = 0
+    for piece in source :
+        heuristic_list = []
+        for goal in target:
+            heuristic_list.append(hex_distance(piece, goal))
+        heuristic += min(heuristic_list)
+
+    return  heuristic
 
 
+def search(initial_state, pieces , target) :
+    initial_state = State(initial_state,pieces,None,0,target)  #initialise first state
+    queue = Q.PriorityQueue()                                       #create Priority queue
+    queue.put(initial_state, initial_state.cost)                    #put initial state in queue
+    vistited_states = {}                                            #create empty dictionary for visited_nodes
+    vistited_states[tuple(initial_state.state.items())] = initial_state.cost #create dictionary
+
+    while not queue.empty():
+        current_node = queue.get()
+
+        if not current_node.pieces:
+            return current_node      
+        
+        # generate successor states of current node 
+        for successor in current_node.successor_board_states():
+            new_cost = successor.cost
+            
+            if tuple(successor.state.items()) not in vistited_states:
+                priority = new_cost + heuristic(initial_state.target, successor.pieces)
+                queue.put(successor, priority)
+
+    return current_node
+
+# Reads colour from the JSON, compares it to a dictionary of values and
+# sets the correct symbol
 def convert_json_to_board_dict(file):
-    # Reads colour from the JSON, compares it to a dictionary of values and
-    # sets the correct symbol
+
     colour_dict = {'red' : 'R','blue': 'B','green':'G'}
     player_colour = colour_dict[file['colour']]
+    coordinates = [(q, r) for q in range(-3, 4) for r in range(-3, 4) if -q - r in range(-3, 4)]
+    
     # Creates an empty dict and constructs an entry for each tuple in JSON, using
     # predetermined player colour for player pieces and a block otherwise
     board_dict = {}
+
     for coordinate in file['pieces']:
         board_dict[tuple(coordinate)] = player_colour
     for coordinate in file['blocks']:
         board_dict[tuple(coordinate)] = 'BLK'
-    # return dict
+    for coordinate in coordinates :
+        if coordinate not in board_dict:
+            board_dict[coordinate]= None
+
+
     return board_dict
 
+#creates a list of all the pieces
+#creates a list of all the possible target nodes (ie theres a block on one target so we cant use it
 
-
+def create_piece_and_target_list(board_dict):
+    pieces = []
+    for entry in board_dict:
+        if board_dict[entry] in goal:
+            pieces.append(entry)
+            targets = goal[board_dict[entry]]
+    for i in targets:
+        if board_dict[i] == 'BLK':
+            targets.remove(i)
+    return pieces, targets
 
 
 def print_board(board_dict, message="", debug=False, **kwargs):
     """
     Helper function to print a drawing of a hexagonal board's contents.
-
     Arguments:
     * `board_dict` -- dictionary with tuples for keys and anything printable
     for values. The tuple keys are interpreted as hexagonal coordinates (using
