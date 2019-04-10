@@ -43,24 +43,44 @@ def main():
     
     #returns state of last piece
     a = search(board_dict,pieces,target)
-    print_board(a.state, debug=True)
     path = []
+    solution_moves = []
     while a :
         path.insert(0 ,a.pieces)
-        print_board(a.state,debug=True)
+        solution_moves.insert(0, a.move)
         a=a.parent
-    print(path)
     
+    for each_move in solution_moves:
+        if each_move:
+            each_move.print_move()
+
+    
+# Stores the details of a move on the board
+class Move : 
+    def __init__(self,origin,destination,movetype):
+        self.origin = origin
+        self.destination = destination
+        self.movetype = movetype
+    
+    # prints output for current move
+    def print_move(self):
+        if self.movetype == "JUMP":
+            print("JUMP from ",self.origin," to ",self.destination,".")
+        elif self.movetype == "MOVE":
+            print("MOVE from ",self.origin," to ",self.destination,".")
+        elif self.movetype == "EXIT":
+            print("EXIT from ",self.origin,".")
     
 #Class for every node state
 class State :
-    def __init__(self,state,pieces,parent,cost,target):
+    def __init__(self,state,pieces,parent,cost,target,move=None):
         self.state = state
         self.pieces = pieces
         self.parent = parent
         self.cost = cost
         self.target = target
         self.cost
+        self.move = move
 
 
     #prints object as a board and not memory location of object
@@ -112,10 +132,12 @@ class State :
             new_state = copy.deepcopy(self.state)
             new_piece = copy.deepcopy(self.pieces)
             
+            generated_by_move = Move(move,move,"EXIT")
+            
             #instead of swapping pieces want to delete one 
             del new_piece[index]
             new_state[move] = None
-            state = State(new_state,new_piece,self,0,self.target)
+            state = State(new_state,new_piece,self,0,self.target,generated_by_move)
             successor_states.append(state)
 
         for each in legal_moves:
@@ -123,6 +145,10 @@ class State :
                 if valid_move_for_piece(piece, each): 
                     # Create state from move for desire piece
                     index = self.pieces.index(piece)
+                    if hex_distance(piece, each) == 1:
+                        generated_by_move = Move(piece,each,"MOVE")
+                    else:
+                        generated_by_move = Move(piece,each,"JUMP")
 
             new_state = copy.deepcopy(self.state)
             new_piece = copy.deepcopy(self.pieces)
@@ -130,7 +156,7 @@ class State :
             new_state[each]= new_state[new_piece[index]]
             new_state[new_piece[index]] = temp
             new_piece[index] = each
-            state = State(new_state,new_piece,self,self.cost + 1 ,self.target)
+            state = State(new_state,new_piece,self,self.cost + 1 ,self.target,generated_by_move)
             successor_states.append(state)
             
 
@@ -148,19 +174,6 @@ def valid_move_for_piece(piece,move):
         if new_jump == move:
             return True
     return False
-
-def swap_pieces_in_state(move,new_state,piece):
-    return True
-
-# prints output for current move
-def print_move(origin, goal, move):
-    if move == "JUMP":
-        print("JUMP from ,",origin," to ",goal,".")
-    elif move == "MOVE":
-        print("MOVE from ,",origin," to ",goal,".")
-    elif move == "EXIT":
-        print("EXIT from ,",origin,".")
-
 
 def same_sign(q , r) :
     return (q < 0 and r < 0)or (q>=0 and r>= 0)
@@ -199,9 +212,6 @@ def search(initial_state, pieces , target) :
     while not queue.empty():
         current_node = queue.get()
 
-        #if current_node.pieces[0] in current_node.target:
-            #print("on_target")
-        
         if not current_node.pieces:
             return current_node      
         
@@ -213,7 +223,6 @@ def search(initial_state, pieces , target) :
                 priority = new_cost + heuristic(initial_state.target, successor.pieces)
                 queue.put(successor, priority)
 
-    # TODO: print output of final moves 
     return current_node
 
 
