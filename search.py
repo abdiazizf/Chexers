@@ -1,3 +1,4 @@
+
 """
 COMP30024 Artificial Intelligence, Semester 1 2019
 Solution to Project Part A: Searching
@@ -10,35 +11,38 @@ import sys
 import json
 import copy
 import queue as Q
-
-# possible move directions
+import cProfile
+#possible move directions
 axial_directions = [(1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1)]
-# possible jump directions
+#possible jump directions
 axial_jump = [(2, 0), (2, -2), (0, -2), (-2, 0), (-2, 2), (0, 2)]
-# goal hex for each colour
-goal = {'R': [(3, -3), (3, -2), (3, -1), (3, 0)], 'B': [(0, -3), (-1, -2), (-2, -1), (-3, 0)],
-        'G': [(-3, 3), (-2, 3), (-1, 3), (0, 3)]}
+#goal hex for each colour
+goal = {'R': [(3, -3), (3,-2) , (3,-1) , (3, 0)] , 'B':[(0, -3), (-1,-2) , (-2,-1) , (-3, 0)] , 'G' :[(-3, 3), (-2, 3) , (-1, 3) , (0, 3)]}
 # off board co-ordinates for generating valid exit moves
-exit_hexes = {'R': [(4, -3), (4, -2), (4, -1)], 'B': [(-3, -1), (-2, -2), (-1, -3)], 'G': [(-3, 4), (-2, 4), (-1, 4)]}
-
+exit_hexes = {'R': [(4, -3),(4,-2),(4,-1)] , 'B':[(-3,-1),(-2,-2),(-1,-3)] , 'G' :[(-3,4),(-2,4),(-1,4)]}
 
 def main():
+
+
     with open(sys.argv[1]) as file:
         data = json.load(file)
 
-    # converts board to dict
+    #converts board to dict
     board_dict = convert_json_to_board_dict(data)
     pieces, target = create_piece_and_target_list(board_dict)
 
-
-    # returns state of last piece
-    a = search(board_dict, pieces, target)
+    pr = cProfile.Profile()
+    pr.enable()
+    #returns state of last piece
+    node = search(board_dict,pieces,target)
+    pr.disable()
     path = []
+    pr.print_stats()
     solution_moves = []
-    while a:
-        path.insert(0, a.pieces)
-        solution_moves.insert(0, a.move)
-        a = a.parent
+    while node :
+        path.insert(0 ,node.pieces)
+        solution_moves.insert(0, node.move)
+        node=node.parent
 
     for each_move in solution_moves:
         if each_move:
@@ -46,8 +50,8 @@ def main():
 
 
 # Stores the details of a move on the board
-class Move:
-    def __init__(self, origin, destination, movetype):
+class Move :
+    def __init__(self,origin,destination,movetype):
         self.origin = origin
         self.destination = destination
         self.movetype = movetype
@@ -55,16 +59,15 @@ class Move:
     # prints output for current move
     def print_move(self):
         if self.movetype == "JUMP":
-            print("JUMP from ", self.origin, " to ", self.destination, ".")
+            print("JUMP from ",self.origin," to ",self.destination,".",sep ='')
         elif self.movetype == "MOVE":
-            print("MOVE from ", self.origin, " to ", self.destination, ".")
+            print("MOVE from ",self.origin," to ",self.destination,".",sep = '')
         elif self.movetype == "EXIT":
-            print("EXIT from ", self.origin, ".")
+            print("EXIT from ",self.origin, ".", sep ='')
 
-
-# Class for every node state
-class State:
-    def __init__(self, state, pieces, parent, cost, target, move=None):
+#Class for every node state
+class State :
+    def __init__(self,state,pieces,parent,cost,target,move=None):
         self.state = state
         self.pieces = pieces
         self.parent = parent
@@ -72,18 +75,10 @@ class State:
         self.target = target
         self.move = move
 
-    # prints object as a board and not memory location of object
-    def __str__(self):
-        return str(self.parent.action)
 
-    def __hash__(self):
-        my_tuple = self.state
-        return hash(my_tuple)
+    #prints object as a board and not memory location of object
 
-    def __eq__(self, other):
-        return (self.state, self.pieces, self.parent) == (other.state, other.pieces, other.parent)
-
-    def __lt__(self, other):
+    def __lt__(self,other):
         return self.cost < other.cost
 
     def successor_board_states(self):
@@ -97,35 +92,38 @@ class State:
                 exit_moves.append(piece)
 
             for i in axial_directions:
-                potential_moves = (piece[0] + i[0], piece[1] + i[1])
+                potential_moves = (piece[0]+i[0], piece[1]+i[1])
 
                 if potential_moves not in self.state or self.state[potential_moves] is not None:
                     continue
                 legal_moves.append(potential_moves)
 
-            for i in axial_jump:
+
+            for i in axial_jump :
                 potential_jump = (piece[0] + i[0], piece[1] + i[1])
                 if potential_jump not in self.state or self.state[potential_jump] is not None:
                     continue
-                elif self.state[(potential_jump[0] - (i[0] / 2), potential_jump[1] - (i[1] / 2))] is not None:
+                elif self.state[(potential_jump[0] - (i[0]/2), potential_jump[1] - (i[1] / 2))] is not None:
                     legal_moves.append(potential_jump)
                 else:
                     continue
 
-        # CREATE NEW STATE FOR EVERY POSSIBLE MOVE Ill maybe create a new method for this
+
+
+        #CREATE NEW STATE FOR EVERY POSSIBLE MOVE Ill maybe create a new method for this
         index = 0
 
         for move in exit_moves:
             index = self.pieces.index(move)
             new_state = copy.deepcopy(self.state)
-            new_piece = copy.deepcopy(self.pieces)
+            new_piece = self.pieces[:]
 
-            generated_by_move = Move(move, move, "EXIT")
+            generated_by_move = Move(move,move,"EXIT")
 
-            # instead of swapping pieces want to delete one
+            #instead of swapping pieces want to delete one
             del new_piece[index]
             new_state[move] = None
-            state = State(new_state, new_piece, self, 0, self.target, generated_by_move)
+            state = State(new_state,new_piece,self,0,self.target,generated_by_move)
             successor_states.append(state)
 
         for each in legal_moves:
@@ -134,26 +132,29 @@ class State:
                     # Create state from move for desire piece
                     index = self.pieces.index(piece)
                     if hex_distance(piece, each) == 1:
-                        generated_by_move = Move(piece, each, "MOVE")
+                        generated_by_move = Move(piece,each,"MOVE")
                     else:
-                        generated_by_move = Move(piece, each, "JUMP")
+                        generated_by_move = Move(piece,each,"JUMP")
 
             new_state = copy.deepcopy(self.state)
-            new_piece = copy.deepcopy(self.pieces)
+            new_piece = self.pieces[:]
             temp = new_state[each]
-            new_state[each] = new_state[new_piece[index]]
+            new_state[each]= new_state[new_piece[index]]
             new_state[new_piece[index]] = temp
             new_piece[index] = each
-            state = State(new_state, new_piece, self, self.cost + 1, self.target, generated_by_move)
+            state = State(new_state,new_piece,self,self.cost + 1 ,self.target,generated_by_move)
             successor_states.append(state)
+
+
 
         return successor_states
 
 
 # Checks if a move is valid for a specific piece
-def valid_move_for_piece(piece, move):
+def valid_move_for_piece(piece,move):
+
     for direction in axial_directions:
-        new_move = piece[0] + direction[0], piece[1] + direction[1]
+        new_move = piece[0]+direction[0], piece[1]+direction[1]
         if new_move == move:
             return True
     for jump in axial_jump:
@@ -162,15 +163,14 @@ def valid_move_for_piece(piece, move):
             return True
     return False
 
-
 # For hex distance calculation, checks whether the values q and r are
 # both positive or negative
-def same_sign(q, r):
-    return (q < 0 and r < 0) or (q >= 0 and r >= 0)
-
+def same_sign(q , r) :
+    return (q < 0 and r < 0)or (q>=0 and r>= 0)
 
 # returns the distance between two axial hex coordinates
 def hex_distance(origin, goal):
+
     distance_x = goal[0] - origin[0]
     distance_y = goal[1] - origin[1]
     if same_sign(distance_x, distance_y):
@@ -180,25 +180,24 @@ def hex_distance(origin, goal):
 
     return
 
-
-# returns the sum of distances for each piece to the nearest target
+#returns the sum of distances for each piece to the nearest target
 def heuristic(target, source):
     heuristic = 0
-    for piece in source:
+    for piece in source :
         heuristic_list = []
         for goal in target:
             heuristic_list.append(hex_distance(piece, goal))
         heuristic += min(heuristic_list)
 
-    return heuristic
+    return  heuristic
 
 
-def search(initial_state, pieces, target):
-    initial_state = State(initial_state, pieces, None, 0, target)  # initialise first state
-    queue = Q.PriorityQueue()  # create Priority queue
-    queue.put(initial_state, initial_state.cost)  # put initial state in queue
-    vistited_states = {}  # create empty dictionary for visited_nodes
-    vistited_states[tuple(initial_state.state.items())] = initial_state.cost  # create dictionary
+def search(initial_state, pieces , target) :
+    initial_state = State(initial_state,pieces,None,0,target)  #initialise first state
+    queue = Q.PriorityQueue()                                       #create Priority queue
+    queue.put(initial_state, initial_state.cost)                    #put initial state in queue
+    vistited_states = {}                                            #create empty dictionary for visited_nodes
+    vistited_states[tuple(initial_state.state.items())] = initial_state.cost #create dictionary
 
     while not queue.empty():
         current_node = queue.get()
@@ -206,22 +205,22 @@ def search(initial_state, pieces, target):
         if not current_node.pieces:
             return current_node
 
-            # generate successor states of current node
+        # generate successor states of current node
         for successor in current_node.successor_board_states():
             new_cost = successor.cost
 
-            if tuple(successor.state.items()) not in vistited_states or new_cost < vistited_states[tuple(successor.state.items())] :
+            if tuple(successor.state.items()) not in vistited_states:
                 vistited_states[tuple(successor.state.items())] = new_cost
                 priority = new_cost + heuristic(initial_state.target, successor.pieces)
                 queue.put(successor, priority)
 
     return current_node
 
-
 # Reads colour from the JSON, compares it to a dictionary of values and
 # sets the correct symbol
 def convert_json_to_board_dict(file):
-    colour_dict = {'red': 'R', 'blue': 'B', 'green': 'G'}
+
+    colour_dict = {'red' : 'R','blue': 'B','green':'G'}
     player_colour = colour_dict[file['colour']]
     coordinates = [(q, r) for q in range(-3, 4) for r in range(-3, 4) if -q - r in range(-3, 4)]
 
@@ -233,15 +232,15 @@ def convert_json_to_board_dict(file):
         board_dict[tuple(coordinate)] = player_colour
     for coordinate in file['blocks']:
         board_dict[tuple(coordinate)] = 'BLK'
-    for coordinate in coordinates:
+    for coordinate in coordinates :
         if coordinate not in board_dict:
-            board_dict[coordinate] = None
+            board_dict[coordinate]= None
+
 
     return board_dict
 
-
-# creates a list of all the pieces
-# creates a list of all the possible target nodes (ie theres a block on one target so we cant use it
+#creates a list of all the pieces
+#creates a list of all the possible target nodes (ie theres a block on one target so we cant use it
 
 def create_piece_and_target_list(board_dict):
     pieces = []
